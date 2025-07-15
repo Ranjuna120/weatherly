@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/weather_model.dart';
 import '../services/weather_service.dart';
 
@@ -10,10 +11,34 @@ class WeatherProvider with ChangeNotifier {
   String? _error;
   final List<String> _searchHistory = [];
 
+  // Settings
+  String _temperatureUnit = 'celsius';
+  bool _isDarkMode = false;
+  bool _weatherAlerts = true;
+  bool _dailyNotifications = false;
+
+  // Favorites
+  final List<String> _favoriteCities = [];
+  final Map<String, WeatherModel> _favoriteWeatherData = {};
+
+  // Getters
+  String get temperatureUnit => _temperatureUnit;
+  bool get isDarkMode => _isDarkMode;
+  bool get weatherAlerts => _weatherAlerts;
+  bool get dailyNotifications => _dailyNotifications;
+  List<String> get favoriteCities => _favoriteCities;
+  Map<String, WeatherModel> get favoriteWeatherData => _favoriteWeatherData;
+
   WeatherModel? get currentWeather => _currentWeather;
   bool get isLoading => _isLoading;
   String? get error => _error;
   List<String> get searchHistory => _searchHistory;
+
+  // Initialize provider
+  WeatherProvider() {
+    _loadSettings();
+    _loadFavorites();
+  }
 
   Future<void> getCurrentLocationWeather() async {
     _setLoading(true);
@@ -131,5 +156,153 @@ class WeatherProvider with ChangeNotifier {
       default:
         return const Color(0xFF87CEEB);
     }
+  }
+
+  // Settings methods
+  Future<void> _loadSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _temperatureUnit = prefs.getString('temperature_unit') ?? 'celsius';
+      _isDarkMode = prefs.getBool('dark_mode') ?? false;
+      _weatherAlerts = prefs.getBool('weather_alerts') ?? true;
+      _dailyNotifications = prefs.getBool('daily_notifications') ?? false;
+      notifyListeners();
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> setTemperatureUnit(String unit) async {
+    _temperatureUnit = unit;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('temperature_unit', unit);
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> setDarkMode(bool value) async {
+    _isDarkMode = value;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('dark_mode', value);
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> setWeatherAlerts(bool value) async {
+    _weatherAlerts = value;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('weather_alerts', value);
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> setDailyNotifications(bool value) async {
+    _dailyNotifications = value;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('daily_notifications', value);
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  // Favorites methods
+  Future<void> _loadFavorites() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final favorites = prefs.getStringList('favorite_cities') ?? [];
+      _favoriteCities.clear();
+      _favoriteCities.addAll(favorites);
+      notifyListeners();
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> loadFavorites() async {
+    await _loadFavorites();
+    await refreshFavorites();
+  }
+
+  Future<void> addToFavorites(String cityName) async {
+    if (!_favoriteCities.contains(cityName)) {
+      _favoriteCities.add(cityName);
+      notifyListeners();
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList('favorite_cities', _favoriteCities);
+
+        // Load weather data for the new favorite
+        await _loadWeatherForCity(cityName);
+      } catch (e) {
+        // Handle error silently
+      }
+    }
+  }
+
+  Future<void> removeFromFavorites(String cityName) async {
+    _favoriteCities.remove(cityName);
+    _favoriteWeatherData.remove(cityName);
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('favorite_cities', _favoriteCities);
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> refreshFavorites() async {
+    for (String city in _favoriteCities) {
+      await _loadWeatherForCity(city);
+    }
+  }
+
+  Future<void> _loadWeatherForCity(String cityName) async {
+    try {
+      final weather = await _weatherService.getWeatherByCity(cityName);
+      _favoriteWeatherData[cityName] = weather;
+      notifyListeners();
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> clearAllData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      _favoriteCities.clear();
+      _favoriteWeatherData.clear();
+      _searchHistory.clear();
+      _temperatureUnit = 'celsius';
+      _isDarkMode = false;
+      _weatherAlerts = true;
+      _dailyNotifications = false;
+
+      notifyListeners();
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  // Temperature conversion
+  String formatTemperature(double temperature) {
+    if (_temperatureUnit == 'fahrenheit') {
+      final fahrenheit = (temperature * 9 / 5) + 32;
+      return '${fahrenheit.round()}°F';
+    }
+    return '${temperature.round()}°C';
   }
 }
