@@ -94,14 +94,35 @@ class _WeatherScreenState extends State<WeatherScreen> {
                                   'Weatherly',
                                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.search, color: Colors.white, size: 28),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const SearchScreen()),
-                                    );
-                                  },
+                                Row(
+                                  children: [
+                                    if (weather.cityName.isNotEmpty)
+                                      IconButton(
+                                        icon: Icon(
+                                          weatherProvider.favoriteCities.contains(weather.cityName)
+                                              ? Icons.favorite
+                                              : Icons.favorite_outline,
+                                          color: Colors.white,
+                                          size: 28,
+                                        ),
+                                        onPressed: () {
+                                          if (weatherProvider.favoriteCities.contains(weather.cityName)) {
+                                            weatherProvider.removeFromFavorites(weather.cityName);
+                                          } else {
+                                            weatherProvider.addToFavorites(weather.cityName);
+                                          }
+                                        },
+                                      ),
+                                    IconButton(
+                                      icon: const Icon(Icons.search, color: Colors.white, size: 28),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const SearchScreen()),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
