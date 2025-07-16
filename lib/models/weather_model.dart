@@ -1,21 +1,48 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:hive/hive.dart';
 
 part 'weather_model.g.dart';
 
+@HiveType(typeId: 0)
 @JsonSerializable()
 class WeatherModel {
+  @HiveField(0)
   final String cityName;
+
+  @HiveField(1)
   final double temperature;
+
+  @HiveField(2)
   final String description;
+
+  @HiveField(3)
   final String icon;
+
+  @HiveField(4)
   final double feelsLike;
+
+  @HiveField(5)
   final int humidity;
+
+  @HiveField(6)
   final double windSpeed;
+
+  @HiveField(7)
   final int pressure;
+
+  @HiveField(8)
   final double visibility;
+
+  @HiveField(9)
   final int uvIndex;
+
+  @HiveField(10)
   final DateTime dateTime;
+
+  @HiveField(11)
   final List<HourlyForecast> hourlyForecast;
+
+  @HiveField(12)
   final List<DailyForecast> dailyForecast;
 
   WeatherModel({
@@ -39,13 +66,25 @@ class WeatherModel {
   Map<String, dynamic> toJson() => _$WeatherModelToJson(this);
 }
 
+@HiveType(typeId: 1)
 @JsonSerializable()
 class HourlyForecast {
+  @HiveField(0)
   final DateTime time;
+
+  @HiveField(1)
   final double temperature;
+
+  @HiveField(2)
   final String icon;
+
+  @HiveField(3)
   final String description;
+
+  @HiveField(4)
   final int humidity;
+
+  @HiveField(5)
   final double windSpeed;
 
   HourlyForecast({
@@ -62,15 +101,31 @@ class HourlyForecast {
   Map<String, dynamic> toJson() => _$HourlyForecastToJson(this);
 }
 
+@HiveType(typeId: 2)
 @JsonSerializable()
 class DailyForecast {
+  @HiveField(0)
   final DateTime date;
+
+  @HiveField(1)
   final double maxTemp;
+
+  @HiveField(2)
   final double minTemp;
+
+  @HiveField(3)
   final String icon;
+
+  @HiveField(4)
   final String description;
+
+  @HiveField(5)
   final int humidity;
+
+  @HiveField(6)
   final double windSpeed;
+
+  @HiveField(7)
   final double chanceOfRain;
 
   DailyForecast({
