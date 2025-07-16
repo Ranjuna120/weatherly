@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/weather_model.dart';
 import '../services/weather_service.dart';
+import '../services/database_service.dart';
 
 class WeatherProvider with ChangeNotifier {
   final WeatherService _weatherService = WeatherService();
@@ -161,11 +161,10 @@ class WeatherProvider with ChangeNotifier {
   // Settings methods
   Future<void> _loadSettings() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _temperatureUnit = prefs.getString('temperature_unit') ?? 'celsius';
-      _isDarkMode = prefs.getBool('dark_mode') ?? false;
-      _weatherAlerts = prefs.getBool('weather_alerts') ?? true;
-      _dailyNotifications = prefs.getBool('daily_notifications') ?? false;
+      _temperatureUnit = DatabaseService.getSetting('temperature_unit', defaultValue: 'celsius') ?? 'celsius';
+      _isDarkMode = DatabaseService.getSetting('dark_mode', defaultValue: false) ?? false;
+      _weatherAlerts = DatabaseService.getSetting('weather_alerts', defaultValue: true) ?? true;
+      _dailyNotifications = DatabaseService.getSetting('daily_notifications', defaultValue: false) ?? false;
       notifyListeners();
     } catch (e) {
       // Handle error silently
@@ -176,8 +175,7 @@ class WeatherProvider with ChangeNotifier {
     _temperatureUnit = unit;
     notifyListeners();
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('temperature_unit', unit);
+      await DatabaseService.saveSetting('temperature_unit', unit);
     } catch (e) {
       // Handle error silently
     }
@@ -187,8 +185,7 @@ class WeatherProvider with ChangeNotifier {
     _isDarkMode = value;
     notifyListeners();
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('dark_mode', value);
+      await DatabaseService.saveSetting('dark_mode', value);
     } catch (e) {
       // Handle error silently
     }
@@ -198,8 +195,7 @@ class WeatherProvider with ChangeNotifier {
     _weatherAlerts = value;
     notifyListeners();
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('weather_alerts', value);
+      await DatabaseService.saveSetting('weather_alerts', value);
     } catch (e) {
       // Handle error silently
     }
@@ -209,8 +205,7 @@ class WeatherProvider with ChangeNotifier {
     _dailyNotifications = value;
     notifyListeners();
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('daily_notifications', value);
+      await DatabaseService.saveSetting('daily_notifications', value);
     } catch (e) {
       // Handle error silently
     }
@@ -219,10 +214,15 @@ class WeatherProvider with ChangeNotifier {
   // Favorites methods
   Future<void> _loadFavorites() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final favorites = prefs.getStringList('favorite_cities') ?? [];
+      final favorites = DatabaseService.getFavoriteCities();
       _favoriteCities.clear();
       _favoriteCities.addAll(favorites);
+
+      // Load weather data for favorites
+      final weatherData = DatabaseService.getAllWeatherData();
+      _favoriteWeatherData.clear();
+      _favoriteWeatherData.addAll(weatherData);
+
       notifyListeners();
     } catch (e) {
       // Handle error silently
@@ -239,8 +239,7 @@ class WeatherProvider with ChangeNotifier {
       _favoriteCities.add(cityName);
       notifyListeners();
       try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setStringList('favorite_cities', _favoriteCities);
+        await DatabaseService.addToFavorites(cityName);
 
         // Load weather data for the new favorite
         await _loadWeatherForCity(cityName);
@@ -255,8 +254,7 @@ class WeatherProvider with ChangeNotifier {
     _favoriteWeatherData.remove(cityName);
     notifyListeners();
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('favorite_cities', _favoriteCities);
+      await DatabaseService.removeFromFavorites(cityName);
     } catch (e) {
       // Handle error silently
     }
@@ -272,6 +270,10 @@ class WeatherProvider with ChangeNotifier {
     try {
       final weather = await _weatherService.getWeatherByCity(cityName);
       _favoriteWeatherData[cityName] = weather;
+
+      // Save to database
+      await DatabaseService.saveWeatherData(cityName, weather);
+
       notifyListeners();
     } catch (e) {
       // Handle error silently
@@ -280,8 +282,7 @@ class WeatherProvider with ChangeNotifier {
 
   Future<void> clearAllData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      await DatabaseService.clearAllData();
 
       _favoriteCities.clear();
       _favoriteWeatherData.clear();
