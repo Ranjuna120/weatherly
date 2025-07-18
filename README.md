@@ -4,7 +4,7 @@ A beautiful, feature-rich weather application built with Flutter featuring elega
 
 ## ✨ Key Features
 
-### 🌍 **Weather Information**
+### 🌍 **Weather Informations**
 - **Real-time Weather**: Current conditions with location-based detection
 - **Hourly & Daily Forecasts**: 24-hour and 7-day weather predictions
 - **Detailed Metrics**: Temperature, humidity, wind speed, feels-like temperature
